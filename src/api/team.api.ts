@@ -11,8 +11,8 @@ export interface TeamParams {
 
 export const teamApi = {
   getTeam: (params?: TeamParams): Promise<PaginatedResponse<Member>> =>
-    api.get('/team', { params }).then((r) => r.data.data),
+    api.get('/members/team', { params }).then((r) => r.data.data),
 
   getMember: (id: string): Promise<Member> =>
-    api.get(`/team/${id}`).then((r) => r.data.data),
+    api.get(`/members/team/${id}`).then((r) => r.data.data),
 };

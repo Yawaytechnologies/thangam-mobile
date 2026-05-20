@@ -69,7 +69,7 @@ export default function DashboardScreen() {
             <StatCard label={STAT_LABELS[0]} value={stats?.totalNetwork ?? 0}         accentColor={STAT_COLORS[0]} />
             <StatCard label={STAT_LABELS[1]} value={stats?.activeMembers ?? 0}        accentColor={STAT_COLORS[1]} />
             <StatCard label={STAT_LABELS[2]} value={stats?.availableProperties ?? 0}  accentColor={STAT_COLORS[2]} />
-            <StatCard label={STAT_LABELS[3]} value={stats?.notificationsCount ?? 0}   accentColor={STAT_COLORS[3]} />
+            <StatCard label={STAT_LABELS[3]} value={stats?.unreadNotifications ?? 0}   accentColor={STAT_COLORS[3]} />
           </View>
         )}
 
