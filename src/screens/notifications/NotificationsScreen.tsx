@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import {
   View, Text, FlatList, StyleSheet,
-  TouchableOpacity, RefreshControl,
+  TouchableOpacity, RefreshControl, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNotifications, useMarkRead } from '../../hooks/useNotifications';
-import { colors, radius, shadow, fontSize } from '../../theme';
+import { useInfiniteNotifications, useMarkRead } from '../../hooks/useNotifications';
+import { colors, radius, shadow, fontSize, fonts } from '../../theme';
 import type { NotificationRecipient, NotificationType } from '../../types';
 
 const TYPE_FILTERS: Array<{ label: string; value: NotificationType | '' }> = [
@@ -65,12 +65,14 @@ function NotificationItem({ item, onMarkRead }: { item: NotificationRecipient; o
 
 export default function NotificationsScreen() {
   const [type, setType] = useState<NotificationType | ''>('');
-  const [page, setPage] = useState(1);
 
-  const { data, isLoading, refetch } = useNotifications({
-    page, limit: 20, type: type || undefined,
-  });
+  const {
+    data, isLoading, isRefetching, refetch,
+    fetchNextPage, hasNextPage, isFetchingNextPage,
+  } = useInfiniteNotifications({ type: type || undefined });
   const markRead = useMarkRead();
+
+  const items = data?.pages.flatMap((p) => p.data) ?? [];
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -82,12 +84,12 @@ export default function NotificationsScreen() {
         horizontal
         showsHorizontalScrollIndicator={false}
         data={TYPE_FILTERS}
-        keyExtractor={(item) => item.value}
+        keyExtractor={(item) => item.value || item.label}
         contentContainerStyle={styles.filterList}
         renderItem={({ item }) => (
           <TouchableOpacity
             style={[styles.filterChip, type === item.value && styles.filterChipActive]}
-            onPress={() => { setType(item.value); setPage(1); }}
+            onPress={() => setType(item.value)}
           >
             <Text style={[styles.filterChipText, type === item.value && styles.filterChipTextActive]}>
               {item.label}
@@ -97,10 +99,10 @@ export default function NotificationsScreen() {
       />
 
       <FlatList
-        data={data?.data ?? []}
+        data={items}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
-        refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor={colors.gold} />}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.gold} />}
         ListEmptyComponent={
           !isLoading ? (
             <View style={styles.emptyContainer}>
@@ -108,11 +110,14 @@ export default function NotificationsScreen() {
             </View>
           ) : null
         }
+        ListFooterComponent={
+          isFetchingNextPage ? <ActivityIndicator color={colors.gold} style={{ paddingVertical: 16 }} /> : null
+        }
         renderItem={({ item }) => (
           <NotificationItem item={item} onMarkRead={() => markRead.mutate(item.id)} />
         )}
         onEndReached={() => {
-          if (data && page * data.limit < data.total) setPage((p) => p + 1);
+          if (hasNextPage && !isFetchingNextPage) fetchNextPage();
         }}
         onEndReachedThreshold={0.4}
       />
@@ -127,7 +132,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8,
     backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border,
   },
-  headerTitle: { fontSize: fontSize.xl, fontWeight: '700', color: colors.textPrimary },
+  headerTitle: { fontFamily: fonts.bold, fontSize: fontSize.xl, color: colors.textPrimary },
 
   filterList: { paddingHorizontal: 16, paddingVertical: 8, gap: 8, backgroundColor: colors.surface },
   filterChip: {
@@ -135,7 +140,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border,
   },
   filterChipActive:     { backgroundColor: colors.gold, borderColor: colors.gold },
-  filterChipText:       { fontSize: 12, fontWeight: '600', color: colors.textSecondary },
+  filterChipText:       { fontFamily: fonts.semiBold, fontSize: 12, color: colors.textSecondary },
   filterChipTextActive: { color: colors.textInverse },
 
   listContent: { padding: 16, paddingBottom: 32, gap: 10 },
@@ -152,16 +157,16 @@ const styles = StyleSheet.create({
   dotRead:    { backgroundColor: colors.border },
 
   notifTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
-  notifTitle:    { flex: 1, fontSize: fontSize.sm, fontWeight: '700', color: colors.textPrimary },
+  notifTitle:    { fontFamily: fonts.bold, flex: 1, fontSize: fontSize.sm, color: colors.textPrimary },
   priorityBadge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 10 },
-  priorityText:  { fontSize: fontSize.xs, fontWeight: '700' },
-  notifMessage:  { fontSize: 13, color: colors.textSecondary, lineHeight: 18, marginBottom: 6 },
+  priorityText:  { fontFamily: fonts.bold, fontSize: fontSize.xs },
+  notifMessage:  { fontFamily: fonts.regular, fontSize: 13, color: colors.textSecondary, lineHeight: 18, marginBottom: 6 },
   notifFooter:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  notifDate:     { fontSize: fontSize.xs, color: colors.textMuted },
-  notifType:     { fontSize: fontSize.xs, color: colors.textMuted, fontWeight: '500' },
+  notifDate:     { fontFamily: fonts.regular, fontSize: fontSize.xs, color: colors.textMuted },
+  notifType:     { fontFamily: fonts.medium, fontSize: fontSize.xs, color: colors.textMuted },
   markReadBtn:   { alignSelf: 'flex-end', marginTop: 8 },
-  markReadText:  { fontSize: 12, color: colors.gold, fontWeight: '600' },
+  markReadText:  { fontFamily: fonts.semiBold, fontSize: 12, color: colors.gold },
 
   emptyContainer: { alignItems: 'center', paddingTop: 60 },
-  emptyText:      { fontSize: fontSize.base, color: colors.textMuted },
+  emptyText:      { fontFamily: fonts.regular, fontSize: fontSize.base, color: colors.textMuted },
 });

@@ -5,9 +5,9 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../stores/auth.store';
-import { useLogout } from '../../hooks/useAuth';
+import { useLogout, useCurrentUser } from '../../hooks/useAuth';
 import { StatusBadge } from '../../components/StatusBadge';
-import { colors, radius, shadow, fontSize } from '../../theme';
+import { colors, radius, shadow, fontSize, fonts } from '../../theme';
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
@@ -30,6 +30,7 @@ function SectionCard({ title, children }: { title: string; children: React.React
 export default function ProfileScreen() {
   const { user } = useAuthStore();
   const logout = useLogout();
+  useCurrentUser(); // re-fetches fresh profile from API and syncs auth store
 
   const member = user?.member;
   const displayName = member?.fullName ?? user?.email ?? 'Member';
@@ -124,25 +125,26 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     marginBottom: 12,
   },
-  avatarText:   { fontSize: fontSize['3xl'], fontWeight: '800', color: colors.navy },
-  displayName:  { fontSize: fontSize.xl, fontWeight: '700', color: colors.textPrimary },
-  roleLabel:    { fontSize: fontSize.sm, color: colors.textSecondary, marginTop: 2 },
-  badgeRow:     { marginTop: 8 },
+  avatarText:  { fontFamily: fonts.bold,    fontSize: fontSize['3xl'], color: colors.navy },
+  displayName: { fontFamily: fonts.bold,    fontSize: fontSize.xl, color: colors.textPrimary },
+  roleLabel:   { fontFamily: fonts.regular, fontSize: fontSize.sm, color: colors.textSecondary, marginTop: 2 },
+  badgeRow:    { marginTop: 8 },
 
   card: {
     backgroundColor: colors.surface, borderRadius: radius.lg,
     padding: 16, marginBottom: 12, ...shadow.sm,
   },
   cardTitle: {
-    fontSize: 12, fontWeight: '700', color: colors.textSecondary,
+    fontFamily: fonts.bold,
+    fontSize: 12, color: colors.textSecondary,
     textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 12,
   },
   infoRow: {
     flexDirection: 'row', justifyContent: 'space-between',
     paddingVertical: 9, borderBottomWidth: 1, borderBottomColor: colors.borderLight,
   },
-  infoLabel: { fontSize: fontSize.sm, color: colors.textMuted, fontWeight: '500' },
-  infoValue: { fontSize: fontSize.sm, color: colors.textPrimary, fontWeight: '600', maxWidth: '55%', textAlign: 'right' },
+  infoLabel: { fontFamily: fonts.medium,   fontSize: fontSize.sm, color: colors.textMuted },
+  infoValue: { fontFamily: fonts.semiBold, fontSize: fontSize.sm, color: colors.textPrimary, maxWidth: '55%', textAlign: 'right' },
 
   logoutBtn: {
     backgroundColor: colors.error,
@@ -150,5 +152,5 @@ const styles = StyleSheet.create({
     alignItems: 'center', marginTop: 8,
   },
   logoutBtnDisabled: { opacity: 0.6 },
-  logoutText: { color: colors.textInverse, fontSize: fontSize.base, fontWeight: '700' },
+  logoutText: { fontFamily: fonts.bold, color: colors.textInverse, fontSize: fontSize.base },
 });

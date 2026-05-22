@@ -9,7 +9,8 @@ interface AuthState {
   user: User | null;
   accessToken: string | null;
   isLoaded: boolean; // true after first SecureStore check — gates navigation
-  setAuth: (user: User, token: string, refreshToken: string) => Promise<void>;
+  setAuth: (user: User, token: string, refreshToken: string, keepSignedIn?: boolean) => Promise<void>;
+  setUser: (user: User) => Promise<void>;
   setAccessToken: (token: string) => void;
   loadFromStorage: () => Promise<void>;
   logout: () => Promise<void>;
@@ -20,10 +21,17 @@ export const useAuthStore = create<AuthState>()((set) => ({
   accessToken: null,
   isLoaded: false,
 
-  setAuth: async (user: User, token: string, refreshToken: string) => {
-    await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, refreshToken);
+  setAuth: async (user: User, token: string, refreshToken: string, keepSignedIn = true) => {
+    if (keepSignedIn) {
+      await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, refreshToken);
+    }
     await SecureStore.setItemAsync(USER_KEY, JSON.stringify(user));
     set({ user, accessToken: token });
+  },
+
+  setUser: async (user: User) => {
+    await SecureStore.setItemAsync(USER_KEY, JSON.stringify(user));
+    set({ user });
   },
 
   setAccessToken: (token: string) => {
@@ -32,6 +40,13 @@ export const useAuthStore = create<AuthState>()((set) => ({
 
   loadFromStorage: async () => {
     try {
+      const refreshToken = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
+      if (!refreshToken) {
+        // keepSignedIn was false — clear any stale user data and stay logged out
+        await SecureStore.deleteItemAsync(USER_KEY);
+        set({ isLoaded: true });
+        return;
+      }
       const userJson = await SecureStore.getItemAsync(USER_KEY);
       if (userJson) {
         const user = JSON.parse(userJson) as User;

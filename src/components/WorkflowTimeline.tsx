@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import type { WorkflowStatus } from '../types';
-import { colors, fontSize } from '../theme';
+import { colors, fontSize, fonts } from '../theme';
 
 const WORKFLOW_STEPS: WorkflowStatus[] = [
   'AVAILABLE',
@@ -29,6 +29,7 @@ interface WorkflowTimelineProps {
 
 export function WorkflowTimeline({ currentStatus }: WorkflowTimelineProps) {
   const currentIndex = WORKFLOW_STEPS.indexOf(currentStatus);
+  if (currentIndex === -1) return null;
 
   return (
     <View style={styles.container}>
@@ -100,15 +101,15 @@ const styles = StyleSheet.create({
   circleDone:    { backgroundColor: colors.success },
   circlePending: { backgroundColor: colors.border },
 
-  checkmark:          { color: colors.textInverse, fontSize: fontSize.sm, fontWeight: '700' },
-  circleNum:          { fontSize: 12, fontWeight: '700' },
+  checkmark:          { fontFamily: fonts.bold, color: colors.textInverse, fontSize: fontSize.sm },
+  circleNum:          { fontFamily: fonts.bold, fontSize: 12 },
   circleNumActive:    { color: colors.textInverse },
   circleNumInactive:  { color: colors.textMuted },
 
   labelCol:    { flex: 1, paddingBottom: 36, justifyContent: 'center', paddingTop: 4 },
-  stepLabel:   { fontSize: fontSize.sm },
-  stepLabelCurrent: { color: colors.gold, fontWeight: '700' },
-  stepLabelDone:    { color: colors.success, fontWeight: '600' },
+  stepLabel:   { fontFamily: fonts.regular, fontSize: fontSize.sm },
+  stepLabelCurrent: { fontFamily: fonts.bold, color: colors.gold },
+  stepLabelDone:    { fontFamily: fonts.semiBold, color: colors.success },
   stepLabelPending: { color: colors.textMuted },
-  currentTag:  { fontSize: fontSize.xs, color: colors.gold, marginTop: 2, fontWeight: '500' },
+  currentTag:  { fontFamily: fonts.medium, fontSize: fontSize.xs, color: colors.gold, marginTop: 2 },
 });

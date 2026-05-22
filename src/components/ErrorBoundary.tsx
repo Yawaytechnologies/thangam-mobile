@@ -1,6 +1,6 @@
 import React, { Component, type ReactNode, type ErrorInfo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { colors, radius, fontSize } from '../theme';
+import { colors, radius, fontSize, fonts } from '../theme';
 
 interface Props { children: ReactNode }
 interface State { error: Error | null }
@@ -50,12 +50,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#fef2f2',
     alignItems: 'center', justifyContent: 'center', marginBottom: 16,
   },
-  iconText: { fontSize: 28, fontWeight: '800', color: colors.error },
-  title:   { fontSize: fontSize.xl, fontWeight: '700', color: colors.textPrimary, marginBottom: 8 },
-  message: { fontSize: fontSize.sm, color: colors.textSecondary, textAlign: 'center', marginBottom: 24 },
+  iconText: { fontFamily: fonts.bold, fontSize: 28, color: colors.error },
+  title:   { fontFamily: fonts.bold,    fontSize: fontSize.xl, color: colors.textPrimary, marginBottom: 8 },
+  message: { fontFamily: fonts.regular, fontSize: fontSize.sm, color: colors.textSecondary, textAlign: 'center', marginBottom: 24 },
   btn: {
     backgroundColor: colors.gold, borderRadius: radius.sm,
     paddingHorizontal: 24, paddingVertical: 12,
   },
-  btnText: { color: colors.textInverse, fontSize: fontSize.base, fontWeight: '700' },
+  btnText: { fontFamily: fonts.bold, color: colors.textInverse, fontSize: fontSize.base },
 });

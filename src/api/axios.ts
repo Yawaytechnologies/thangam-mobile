@@ -18,9 +18,17 @@ export function setNavigationRef(ref: { navigate: (screen: string) => void }) {
   navigationRef = ref;
 }
 
-// Request interceptor: attach Bearer token
+// Concurrency limiter
+let activeRequests = 0;
+const MAX_CONCURRENT = 5;
+
+// Request interceptor: concurrency cap + Bearer token
 api.interceptors.request.use(
-  (config) => {
+  async (config) => {
+    while (activeRequests >= MAX_CONCURRENT) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    activeRequests++;
     const token = useAuthStore.getState().accessToken;
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -39,10 +47,11 @@ const processQueue = (error: unknown, token: string | null = null) => {
   failedQueue = [];
 };
 
-// Response interceptor: handle 401 and refresh
+// Response interceptor: decrement concurrency counter + handle 401 and refresh
 api.interceptors.response.use(
-  (res) => res,
+  (res) => { activeRequests--; return res; },
   async (error) => {
+    activeRequests--;
     const original = error.config;
 
     // No response = network-level failure (offline, timeout, DNS) — reject immediately
@@ -52,7 +61,12 @@ api.interceptors.response.use(
 
     if (error.response?.status === 401 && !original._retry) {
       if (isRefreshing) {
+        const MAX_QUEUE = 10;
         return new Promise<string>((resolve, reject) => {
+          if (failedQueue.length >= MAX_QUEUE) {
+            reject(new Error('Too many queued requests — please try again.'));
+            return;
+          }
           failedQueue.push({ resolve, reject });
         })
           .then((token) => {

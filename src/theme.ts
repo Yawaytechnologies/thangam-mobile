@@ -1,5 +1,13 @@
 /** Brand + UI design tokens — change here to retheme the entire app */
 
+export const fonts = {
+  light:    'SpaceGrotesk_300Light',
+  regular:  'SpaceGrotesk_400Regular',
+  medium:   'SpaceGrotesk_500Medium',
+  semiBold: 'SpaceGrotesk_600SemiBold',
+  bold:     'SpaceGrotesk_700Bold',
+} as const;
+
 export const colors = {
   // Brand
   gold:        '#c9a227',

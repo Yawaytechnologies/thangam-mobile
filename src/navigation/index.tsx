@@ -7,7 +7,8 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { useAuthStore } from '../stores/auth.store';
 import { setNavigationRef } from '../api/axios';
-import { colors } from '../theme';
+import { useSocket } from '../hooks/useSocket';
+import { colors, fonts } from '../theme';
 
 import LoginScreen from '../screens/auth/LoginScreen';
 import DashboardScreen from '../screens/dashboard/DashboardScreen';
@@ -52,7 +53,7 @@ function NotificationBadge() {
         paddingHorizontal: 3,
       }}
     >
-      <Text style={{ color: colors.textInverse, fontSize: 10, fontWeight: '700' }}>
+      <Text style={{ fontFamily: fonts.bold, color: colors.textInverse, fontSize: 10 }}>
         {count > 99 ? '99+' : String(count)}
       </Text>
     </View>
@@ -62,6 +63,7 @@ function NotificationBadge() {
 function MainTabs() {
   const { user } = useAuthStore();
   const isDirector = user?.role === 'DIRECTOR';
+  useSocket();
 
   return (
     <Tab.Navigator
@@ -72,12 +74,10 @@ function MainTabs() {
         tabBarStyle: {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
-          paddingBottom: 4,
-          height: 60,
         },
         tabBarLabelStyle: {
+          fontFamily: fonts.semiBold,
           fontSize: 11,
-          fontWeight: '600',
         },
       }}
     >
@@ -152,10 +152,10 @@ function SplashScreen() {
       }}>
         <MaterialCommunityIcons name="home-city" size={36} color={colors.textInverse} />
       </View>
-      <Text style={{ color: colors.textInverse, fontSize: 20, fontWeight: '700', marginBottom: 4 }}>
+      <Text style={{ fontFamily: fonts.bold, color: colors.textInverse, fontSize: 20, marginBottom: 4 }}>
         Sri Thangam
       </Text>
-      <Text style={{ color: colors.gold, fontSize: 12, fontWeight: '600', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 32 }}>
+      <Text style={{ fontFamily: fonts.semiBold, color: colors.gold, fontSize: 12, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 32 }}>
         Housing
       </Text>
       <ActivityIndicator color={colors.gold} />
