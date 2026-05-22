@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { fonts } from '../theme';
 
 type Status = string;
 
@@ -50,7 +51,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   text: {
+    fontFamily: fonts.bold,
     fontSize: 11,
-    fontWeight: '700',
   },
 });

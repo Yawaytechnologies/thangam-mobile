@@ -1,14 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, FlatList, StyleSheet, TextInput,
-  TouchableOpacity, RefreshControl,
+  TouchableOpacity, RefreshControl, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useProperties } from '../../hooks/useProperties';
+import { useInfiniteProperties } from '../../hooks/useProperties';
 import { StatusBadge } from '../../components/StatusBadge';
-import { colors, radius, shadow, fontSize } from '../../theme';
+import { colors, radius, shadow, fontSize, fonts } from '../../theme';
 import type { PropertiesStackParamList } from '../../navigation/types';
 import type { Property, WorkflowStatus } from '../../types';
 
@@ -47,28 +47,38 @@ function PropertyCard({ property, onPress }: { property: Property; onPress: () =
 
 export default function PropertiesScreen() {
   const navigation = useNavigation<NavProp>();
-  const [search, setSearch] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [workflowStatus, setWorkflowStatus] = useState<WorkflowStatus | ''>('');
-  const [page, setPage] = useState(1);
 
-  const { data, isLoading, refetch } = useProperties({
-    page, limit: 20,
-    search: search || undefined,
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchInput), 400);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  const {
+    data, isLoading, isRefetching, refetch,
+    fetchNextPage, hasNextPage, isFetchingNextPage,
+  } = useInfiniteProperties({
+    search: debouncedSearch || undefined,
     workflowStatus: workflowStatus || undefined,
   });
+
+  const items = data?.pages.flatMap((p) => p.data) ?? [];
+  const total = data?.pages[0]?.total;
 
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.pageHeader}>
         <Text style={styles.headerTitle}>Properties</Text>
-        {data?.total ? <Text style={styles.headerSub}>{data.total} total</Text> : null}
+        {total ? <Text style={styles.headerSub}>{total} total</Text> : null}
       </View>
 
       <View style={styles.searchContainer}>
         <TextInput
           style={styles.searchInput}
-          value={search}
-          onChangeText={(t) => { setSearch(t); setPage(1); }}
+          value={searchInput}
+          onChangeText={(t) => setSearchInput(t)}
           placeholder="Search by project, plot, ID..."
           placeholderTextColor={colors.textMuted}
         />
@@ -78,12 +88,12 @@ export default function PropertiesScreen() {
         horizontal
         showsHorizontalScrollIndicator={false}
         data={WORKFLOW_FILTERS}
-        keyExtractor={(item) => item.value}
+        keyExtractor={(item) => item.value || item.label}
         contentContainerStyle={styles.filterList}
         renderItem={({ item }) => (
           <TouchableOpacity
             style={[styles.filterChip, workflowStatus === item.value && styles.filterChipActive]}
-            onPress={() => { setWorkflowStatus(item.value); setPage(1); }}
+            onPress={() => setWorkflowStatus(item.value)}
           >
             <Text style={[styles.filterChipText, workflowStatus === item.value && styles.filterChipTextActive]}>
               {item.label}
@@ -93,16 +103,19 @@ export default function PropertiesScreen() {
       />
 
       <FlatList
-        data={data?.data ?? []}
+        data={items}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
-        refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor={colors.gold} />}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.gold} />}
         ListEmptyComponent={
           !isLoading ? (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>No properties found</Text>
             </View>
           ) : null
+        }
+        ListFooterComponent={
+          isFetchingNextPage ? <ActivityIndicator color={colors.gold} style={{ paddingVertical: 16 }} /> : null
         }
         renderItem={({ item }) => (
           <PropertyCard
@@ -111,7 +124,7 @@ export default function PropertiesScreen() {
           />
         )}
         onEndReached={() => {
-          if (data && page * data.limit < data.total) setPage((p) => p + 1);
+          if (hasNextPage && !isFetchingNextPage) fetchNextPage();
         }}
         onEndReachedThreshold={0.4}
       />
@@ -127,11 +140,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderBottomWidth: 1, borderBottomColor: colors.border,
   },
-  headerTitle: { fontSize: fontSize.xl, fontWeight: '700', color: colors.textPrimary },
-  headerSub:   { fontSize: fontSize.sm, color: colors.textSecondary, marginTop: 1 },
+  headerTitle: { fontFamily: fonts.bold,    fontSize: fontSize.xl, color: colors.textPrimary },
+  headerSub:   { fontFamily: fonts.regular, fontSize: fontSize.sm, color: colors.textSecondary, marginTop: 1 },
 
   searchContainer: { paddingHorizontal: 16, paddingVertical: 10, backgroundColor: colors.surface },
   searchInput: {
+    fontFamily: fonts.regular,
     backgroundColor: colors.background, borderRadius: radius.sm,
     paddingHorizontal: 14, paddingVertical: 10,
     fontSize: fontSize.sm, color: colors.textPrimary,
@@ -144,7 +158,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border,
   },
   filterChipActive:     { backgroundColor: colors.gold, borderColor: colors.gold },
-  filterChipText:       { fontSize: 12, fontWeight: '600', color: colors.textSecondary },
+  filterChipText:       { fontFamily: fonts.semiBold, fontSize: 12, color: colors.textSecondary },
   filterChipTextActive: { color: colors.textInverse },
 
   listContent: { padding: 16, paddingBottom: 32, gap: 12 },
@@ -153,12 +167,12 @@ const styles = StyleSheet.create({
     ...shadow.sm,
   },
   cardHeader:  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 },
-  projectName: { flex: 1, fontSize: fontSize.base, fontWeight: '700', color: colors.textPrimary, marginRight: 8 },
-  plotNumber:  { fontSize: fontSize.sm, color: colors.textSecondary, marginBottom: 6 },
+  projectName: { fontFamily: fonts.bold,    flex: 1, fontSize: fontSize.base, color: colors.textPrimary, marginRight: 8 },
+  plotNumber:  { fontFamily: fonts.regular, fontSize: fontSize.sm, color: colors.textSecondary, marginBottom: 6 },
   cardMeta:    { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginBottom: 6 },
-  metaText:    { fontSize: 12, color: colors.textMuted },
-  propId:      { fontSize: fontSize.xs, fontFamily: 'monospace', color: colors.textMuted },
+  metaText:    { fontFamily: fonts.regular, fontSize: 12, color: colors.textMuted },
+  propId:      { fontFamily: fonts.regular, fontSize: fontSize.xs, color: colors.textMuted },
 
   emptyContainer: { alignItems: 'center', paddingTop: 60 },
-  emptyText:      { fontSize: fontSize.base, color: colors.textMuted },
+  emptyText:      { fontFamily: fonts.regular, fontSize: fontSize.base, color: colors.textMuted },
 });
